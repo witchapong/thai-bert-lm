@@ -61,8 +61,8 @@ from transformers import (
     RobertaForMaskedLM,
     RobertaTokenizer,
     get_linear_schedule_with_warmup,
+    get_linear_schedule_with_warmup_pct
 )
-
 
 try:
     from torch.utils.tensorboard import SummaryWriter
@@ -263,8 +263,13 @@ def train(args, train_dataset, model: PreTrainedModel, tokenizer: PreTrainedToke
         {"params": [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)], "weight_decay": 0.0},
     ]
     optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate, eps=args.adam_epsilon)
-    scheduler = get_linear_schedule_with_warmup(
-        optimizer, num_warmup_steps=args.warmup_steps, num_training_steps=t_total
+    
+    # scheduler = get_linear_schedule_with_warmup(
+    #     optimizer, num_warmup_steps=args.warmup_steps, num_training_steps=t_total
+    # )
+    
+    scheduler = get_linear_schedule_with_warmup_pct(
+        optimizer, pct_warmup=args.pct_warmup, num_training_steps=t_total
     )
 
     # Check if saved optimizer or scheduler states exist
@@ -581,7 +586,8 @@ def main():
         type=int,
         help="If > 0: set total number of training steps to perform. Override num_train_epochs.",
     )
-    parser.add_argument("--warmup_steps", default=0, type=int, help="Linear warmup over warmup_steps.")
+    # parser.add_argument("--warmup_steps", default=0, type=int, help="Linear warmup over warmup_steps.")
+    parser.add_argument("--pct_warmup", default=0.3, type=float, help="Linear warmup over pct_warmup * total_steps.")
 
     parser.add_argument("--logging_steps", type=int, default=500, help="Log every X updates steps.")
     parser.add_argument("--save_steps", type=int, default=500, help="Save checkpoint every X updates steps.")
