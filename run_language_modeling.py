@@ -69,6 +69,8 @@ try:
 except ImportError:
     from tensorboardX import SummaryWriter
 
+from tokenizers import ByteLevelBPETokenizer
+from tokenizers.processors import BertProcessing
 
 logger = logging.getLogger(__name__)
 
@@ -134,8 +136,10 @@ class LineByLineTextDataset(Dataset):
 
         with open(file_path, encoding="utf-8") as f:
             lines = [line for line in f.read().splitlines() if (len(line) > 0 and not line.isspace())]
-
-        self.examples = tokenizer.batch_encode_plus(lines, add_special_tokens=True, max_length=block_size)["input_ids"]
+        
+        logger.info("Running tokenizer")
+        # self.examples = tokenizer.batch_encode_plus(lines, add_special_tokens=True, max_length=block_size)["input_ids"]
+        self.examples = [x.ids for x in tokenizer.encode_batch(lines)]
 
     def __len__(self):
         return len(self.examples)
@@ -709,7 +713,16 @@ def main():
         config = config_class()
 
     if args.tokenizer_name:
-        tokenizer = tokenizer_class.from_pretrained(args.tokenizer_name, cache_dir=args.cache_dir)
+        # tokenizer = tokenizer_class.from_pretrained(args.tokenizer_name, cache_dir=args.cache_dir)
+        tokenizer = ByteLevelBPETokenizer(
+            os.path.join(args.tokenizer_name, "vocab.json"),
+            os.path.join(args.tokenizer_name, "merges.txt")
+        )
+        tokenizer._tokenizer.post_processor = BertProcessing(
+            ("</s>", tokenizer.token_to_id("</s>")),
+            ("<s>", tokenizer.token_to_id("<s>")),
+        )
+        tokenizer.enable_truncation(max_length=512)
     elif args.model_name_or_path:
         tokenizer = tokenizer_class.from_pretrained(args.model_name_or_path, cache_dir=args.cache_dir)
     else:
