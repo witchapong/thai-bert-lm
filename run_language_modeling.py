@@ -127,7 +127,7 @@ class TextDataset(Dataset):
 
 
 class LineByLineTextDataset(Dataset):
-    def __init__(self, tokenizer: PreTrainedTokenizer, args, file_path: str, block_size=512):
+    def __init__(self, tokenizer: PreTrainedTokenizer, args, file_path: str):
         assert os.path.isfile(file_path)
         # Here, we do not cache the features, operating under the assumption
         # that we will soon use fast multithreaded tokenizers from the
@@ -151,7 +151,7 @@ class LineByLineTextDataset(Dataset):
 def load_and_cache_examples(args, tokenizer, evaluate=False):
     file_path = args.eval_data_file if evaluate else args.train_data_file
     if args.line_by_line:
-        return LineByLineTextDataset(tokenizer, args, file_path=file_path, block_size=args.block_size)
+        return LineByLineTextDataset(tokenizer, args, file_path=file_path)
     else:
         return TextDataset(tokenizer, args, file_path=file_path, block_size=args.block_size)
 
@@ -731,11 +731,11 @@ def main():
             "and load it from here, using --tokenizer_name".format(tokenizer_class.__name__)
         )
 
-    if args.block_size <= 0:
-        args.block_size = tokenizer.max_len
-        # Our input block size will be the max possible for the model
-    else:
-        args.block_size = min(args.block_size, tokenizer.max_len)
+    # if args.block_size <= 0:
+    #     args.block_size = tokenizer.max_len
+    #     # Our input block size will be the max possible for the model
+    # else:
+    #     args.block_size = min(args.block_size, tokenizer.max_len)
 
     if args.model_name_or_path:
         model = model_class.from_pretrained(
